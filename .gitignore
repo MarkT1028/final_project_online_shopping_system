@@ -1,6 +1,5 @@
-*.o
-client
-server
-certs/
-client.dSYM/
-.DS_Store
+*/data
+*/obj
+*/out
+/bin
+/lib
