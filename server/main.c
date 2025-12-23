@@ -17,21 +17,11 @@
 pid_t workers[WORKER_COUNT];
 int server_fd;
 
+volatile sig_atomic_t shutdown_flag = 0;
+
 void handle_signal(int sig) {
     if (sig == SIGINT) {
-        printf("\n[Master] Shutting down...\n");
-        // Kill workers
-        for (int i = 0; i < WORKER_COUNT; i++) {
-            kill(workers[i], SIGKILL);
-        }
-        // Wait for them
-        while (wait(NULL) > 0);
-        
-        // Cleanup resources
-        shm_destroy();
-        close(server_fd);
-        printf("[Master] Goodbye.\n");
-        exit(0);
+        shutdown_flag = 1;
     }
 }
 
@@ -88,6 +78,21 @@ int main() {
     // 5. Master Loop (Just wait)
     while (1) {
         pause(); // Wait for signal
+        if (shutdown_flag) {
+            printf("\n[Master] Shutting down...\n");
+            // Kill workers
+            for (int i = 0; i < WORKER_COUNT; i++) {
+                kill(workers[i], SIGKILL);
+            }
+            // Wait for them
+            while (wait(NULL) > 0);
+            
+            // Cleanup resources
+            shm_destroy();
+            close(server_fd);
+            printf("[Master] Goodbye.\n");
+            break;
+        }
     }
 
     return 0;

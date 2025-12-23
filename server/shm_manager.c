@@ -27,15 +27,25 @@ void shm_unlock() {
 
 int shm_init() {
     // 1. Create Shared Memory
-    shm_id = shmget(SHM_KEY, sizeof(SharedData), IPC_CREAT | 0666);
-    if (shm_id < 0) { perror("shmget failed"); return -1; }
+    shm_id = shmget(SHM_KEY, sizeof(SharedData), IPC_CREAT | IPC_EXCL | 0666);
+    int is_new = (shm_id >= 0);
+    
+    if (!is_new) {
+        // Shared memory already exists, try to attach
+        shm_id = shmget(SHM_KEY, sizeof(SharedData), 0666);
+        if (shm_id < 0) { 
+            perror("shmget failed"); 
+            return -1; 
+        }
+    }
 
     // Attach to process
     shared_mem = (SharedData *)shmat(shm_id, NULL, 0);
     if (shared_mem == (void *)-1) { perror("shmat failed"); return -1; }
 
-    // Initialize data only if it looks empty
-    if (shared_mem->count == 0) {
+    // Initialize data only if we created new shared memory
+    if (is_new) {
+        memset(shared_mem, 0, sizeof(SharedData));
         shared_mem->count = 5;
         // Mock Data
         shared_mem->items[0] = (ItemInfo){1, "Apple", 8, 5};
@@ -46,12 +56,22 @@ int shm_init() {
     }
 
     // 2. Create Semaphore
-    sem_id = semget(SEM_KEY, 1, IPC_CREAT | 0666);
-    if (sem_id < 0) { perror("semget failed"); return -1; }
+    sem_id = semget(SEM_KEY, 1, IPC_CREAT | IPC_EXCL | 0666);
+    int sem_is_new = (sem_id >= 0);
+    
+    if (!sem_is_new) {
+        // Semaphore already exists
+        sem_id = semget(SEM_KEY, 1, 0666);
+        if (sem_id < 0) { 
+            perror("semget failed"); 
+            return -1; 
+        }
+    }
 
-    // Initialize Semaphore to 1 (Binary Semaphore / Mutex)
-    // semctl SETVAL needs a union in some systems, but passing value directly works on modern Linux
-    semctl(sem_id, 0, SETVAL, 1);
+    // Initialize Semaphore to 1 only if newly created (Binary Semaphore / Mutex)
+    if (sem_is_new) {
+        semctl(sem_id, 0, SETVAL, 1);
+    }
 
     return 0;
 }

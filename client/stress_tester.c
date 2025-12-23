@@ -111,7 +111,9 @@ void *stress_worker(void *arg) {
 
     pthread_mutex_lock(&stats_lock);
     if (success_flow) {
-        latency_samples[total_success] = latency;
+        if (total_success < THREAD_COUNT) {
+            latency_samples[total_success] = latency;
+        }
         total_success++;
         total_latency_ms += latency;
 
