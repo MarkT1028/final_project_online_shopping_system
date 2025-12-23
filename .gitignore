@@ -1,0 +1,6 @@
+*.o
+client
+server
+certs/
+client.dSYM/
+.DS_Store
