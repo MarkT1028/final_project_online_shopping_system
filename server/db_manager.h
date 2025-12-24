@@ -1,5 +1,6 @@
 #ifndef DB_MANAGER_H
 #define DB_MANAGER_H
+#include <sqlite3.h>
 
 int db_init(const char *db_file);
 
