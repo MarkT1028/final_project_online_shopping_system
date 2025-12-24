@@ -1,7 +1,9 @@
 # Compiler and Flags
 CC = gcc
-CFLAGS = -Wall -Wextra -g -I../common
-LIBS = -L../lib -lcommon -lssl -lcrypto -lsqlite3 -lpthread
+# macOS OpenSSL path
+OPENSSL_PATH = /opt/homebrew/opt/openssl@3
+CFLAGS = -Wall -Wextra -g -I../common -I$(OPENSSL_PATH)/include
+LIBS = -L../lib -L$(OPENSSL_PATH)/lib -lcommon -lssl -lcrypto -lsqlite3 -lpthread
 
 # Directories
 BIN_DIR = ../bin

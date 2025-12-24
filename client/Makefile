@@ -1,8 +1,10 @@
 # Compiler and Flags
 CC = gcc
-CFLAGS = -Wall -Wextra -g -I../common
+# macOS OpenSSL path
+OPENSSL_PATH = /opt/homebrew/opt/openssl@3
+CFLAGS = -Wall -Wextra -g -I../common -I$(OPENSSL_PATH)/include
 # Links against common lib, SSL, and Pthread
-LIBS = -L../lib -lcommon -lssl -lcrypto -lpthread
+LIBS = -L../lib -L$(OPENSSL_PATH)/lib -lcommon -lssl -lcrypto -lpthread
 
 # Directories
 BIN_DIR = ../bin

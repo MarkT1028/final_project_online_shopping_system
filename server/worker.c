@@ -226,6 +226,13 @@ void handle_client(SSL *ssl) {
 }
 
 void worker_loop(int server_fd, SSL_CTX *ctx) {
+    // Each worker needs its own database connection
+    // SQLite connections cannot be shared across processes
+    if (db_init("server/data/shop.db") < 0) {
+        fprintf(stderr, "[Worker] Failed to initialize database\n");
+        return;
+    }
+    
     while (1) {
         struct sockaddr_in client_addr;
         socklen_t addr_len = sizeof(client_addr);

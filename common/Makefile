@@ -1,6 +1,8 @@
 # Compiler and Flags
 CC = gcc
-CFLAGS = -Wall -Wextra -g -O2 -I.
+# macOS OpenSSL path
+OPENSSL_PATH = /opt/homebrew/opt/openssl@3
+CFLAGS = -Wall -Wextra -g -O2 -I. -I$(OPENSSL_PATH)/include
 AR = ar
 ARFLAGS = rcs
 

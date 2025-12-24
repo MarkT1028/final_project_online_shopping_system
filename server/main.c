@@ -35,7 +35,8 @@ int main() {
     if (!ctx) exit(EXIT_FAILURE);
 
     if (shm_init() < 0) exit(EXIT_FAILURE);
-    if (db_init(DB_FILE) < 0) exit(EXIT_FAILURE);
+    // Note: db_init will be called in each worker, not here
+    // SQLite connections cannot be shared across processes
 
     // 3. Setup Socket
     server_fd = socket(AF_INET, SOCK_STREAM, 0);

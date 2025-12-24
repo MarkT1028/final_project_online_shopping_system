@@ -14,6 +14,12 @@ int db_init(const char *db_file) {
         return -1;
     }
 
+    // Enable WAL mode for better concurrency
+    sqlite3_exec(db, "PRAGMA journal_mode=WAL;", 0, 0, 0);
+    
+    // Set busy timeout to handle concurrent access
+    sqlite3_busy_timeout(db, 5000); // 5 seconds
+
     // Create table if not exists
     const char *sql = "CREATE TABLE IF NOT EXISTS users("
                       "id INTEGER PRIMARY KEY AUTOINCREMENT,"
