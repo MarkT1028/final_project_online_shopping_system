@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include "network_utils.h"
 #include <arpa/inet.h>
-#include <openssl/sha.h>
+#include <openssl/evp.h>
 #include <sys/time.h>
 
 // --- OpenSSL Initialization ---
@@ -203,14 +203,34 @@ int connect_to_server_tls(const char *ip, int port, SSL_CTX *ctx, SSL **out_ssl,
 }
 
 void sha256_string(const char *str, char *output) {
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, str, strlen(str));
-    SHA256_Final(hash, &sha256);
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    unsigned int length_of_hash = 0;
 
-    // Convert to Hex String
-    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    EVP_MD_CTX *context = EVP_MD_CTX_new();
+    if (context == NULL) {
+        perror("EVP_MD_CTX_new failed");
+        return;
+    }
+
+    if (EVP_DigestInit_ex(context, EVP_sha256(), NULL) != 1) {
+        EVP_MD_CTX_free(context);
+        return;
+    }
+
+    if (EVP_DigestUpdate(context, str, strlen(str)) != 1) {
+        EVP_MD_CTX_free(context);
+        return;
+    }
+
+    if (EVP_DigestFinal_ex(context, hash, &length_of_hash) != 1) {
+        EVP_MD_CTX_free(context);
+        return;
+    }
+
+    EVP_MD_CTX_free(context);
+
+    // Convert to hex string
+    for(unsigned int i = 0; i < length_of_hash; i++) {
         sprintf(output + (i * 2), "%02x", hash[i]);
     }
     output[64] = 0; // Null terminator
