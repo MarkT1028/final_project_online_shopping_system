@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +6,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <sqlite3.h>
+#include <signal.h>
 #include "worker.h"
 #include "../common/protocol.h"
 #include "../common/network_utils.h"
@@ -15,10 +17,28 @@
 #define DB_FILE "server/data/shop.db"
 
 static sqlite3 *worker_db = NULL;
+static volatile sig_atomic_t worker_running = 1;
 
 // --- Helper Functions ---
 
-// 快速回傳基本回應 (利用 net_send_packet)
+void handle_worker_stop(int sig) {
+    (void)sig;
+    worker_running = 0;
+}
+
+
+// Setup signal handler without SA_RESTART
+void setup_signal_no_restart(int sig, void (*handler)(int)) {
+    struct sigaction sa;
+    sa.sa_handler = handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(sig, &sa, NULL) == -1) {
+        perror("sigaction failed");
+        exit(1);
+    }
+}
+
 void send_basic_resp(SSL *ssl, int opcode, int status, const char *msg, int is_admin) {
     BasicResponse resp;
     memset(&resp, 0, sizeof(resp));
@@ -230,18 +250,22 @@ void handle_client(SSL *ssl) {
 }
 
 void worker_loop(int server_fd, SSL_CTX *ctx) {
+    setup_signal_no_restart(SIGTERM, handle_worker_stop);
+
     int rc = sqlite3_open(DB_FILE, &worker_db);
     if (rc != SQLITE_OK) {
         fprintf(stderr, "[Worker] Cannot open database: %s\n", sqlite3_errmsg(worker_db));
         exit(EXIT_FAILURE);
     }
+    sqlite3_busy_timeout(worker_db, 3000);
 
-    while (1) {
+    while (worker_running) {
         struct sockaddr_in client_addr;
         socklen_t addr_len = sizeof(client_addr);
         int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len);
-        if (client_fd < 0) continue;
-
+        if (client_fd < 0) {
+            continue; 
+        }
         net_set_timeout(client_fd, TIMEOUT_SEC);
 
         SSL *ssl = SSL_new(ctx);
@@ -254,5 +278,8 @@ void worker_loop(int server_fd, SSL_CTX *ctx) {
         close(client_fd);
     }
 
-    sqlite3_close(worker_db);
+    // Cleanup
+    if (worker_db) {
+        sqlite3_close(worker_db);
+    }
 }

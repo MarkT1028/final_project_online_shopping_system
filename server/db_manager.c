@@ -3,7 +3,6 @@
 #include <sqlite3.h>
 #include "db_manager.h"
 
-
 int db_init(const char *db_file) {
     char *err_msg = 0;
     sqlite3 *db = NULL;

@@ -82,7 +82,7 @@ int main() {
             printf("\n[Master] Shutting down...\n");
             // Kill workers
             for (int i = 0; i < WORKER_COUNT; i++) {
-                kill(workers[i], SIGKILL);
+                kill(workers[i], SIGTERM);
             }
             // Wait for them
             while (wait(NULL) > 0);
