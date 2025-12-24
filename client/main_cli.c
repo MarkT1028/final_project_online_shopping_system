@@ -80,10 +80,10 @@ void do_login() {
     char username[32], password[32];
     
     printf("Enter Username: "); fflush(stdout); 
-    scanf("%20s", username);
+    scanf("%31s", username);
     
     printf("Enter Password: "); fflush(stdout);
-    scanf("%20s", password);
+    scanf("%31s", password);
 
     LoginRequest req;
     memset(&req, 0, sizeof(req));
@@ -150,7 +150,7 @@ void do_admin_action(int opcode) {
     char name[32] = {0}; int price=0, qty=0, id=0;
     if (opcode == OP_ADD_ITEM) {
         printf("Enter Item Name: "); fflush(stdout);
-        scanf("%20s", name);
+        scanf("%31s", name);
         printf("Enter Price: "); fflush(stdout);
         scanf("%d", &price);
         printf("Enter Quantity: "); fflush(stdout);

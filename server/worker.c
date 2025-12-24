@@ -45,6 +45,10 @@ int check_login(SSL *ssl, int user_role) {
 
 int handle_login(SSL *ssl, void *buffer) {
     LoginRequest *req = (LoginRequest *)buffer;
+    // Ensure null termination
+    req->username[MAX_NAME_LEN - 1] = '\0';
+    req->password_hash[64] = '\0';
+    
     printf("[Worker] Login attempt: %s\n", req->username);
     int role = db_validate_user(req->username, req->password_hash);
     
@@ -65,6 +69,12 @@ void handle_buy(SSL *ssl, void *buffer) {
     char msg[128] = "Item not found or out of stock";
     int status = -1;
 
+    // Validate input
+    if (req->quantity <= 0 || req->quantity > 1000) {
+        send_basic_resp(ssl, OP_BUY_RESP, -1, "Invalid quantity", 0);
+        return;
+    }
+
     shm_lock();
     SharedData *shm = shm_get_data();
     for (int i = 0; i < shm->count; i++) {
@@ -72,7 +82,7 @@ void handle_buy(SSL *ssl, void *buffer) {
             if (shm->items[i].quantity >= req->quantity) {
                 shm->items[i].quantity -= req->quantity;
                 status = 0;
-                sprintf(msg, "Bought %s x%d", shm->items[i].name, req->quantity);
+                snprintf(msg, sizeof(msg), "Bought %s x%d", shm->items[i].name, req->quantity);
             }
             break;
         }
@@ -86,6 +96,13 @@ void handle_add_item(SSL *ssl, void *buffer) {
     char msg[128];
     int status = 0;
 
+    // Ensure null termination and validate input
+    req->name[MAX_NAME_LEN - 1] = '\0';
+    if (req->price < 0 || req->quantity < 0) {
+        send_basic_resp(ssl, OP_ADD_ITEM, -1, "Invalid price or quantity", 0);
+        return;
+    }
+
     shm_lock();
     SharedData *shm = shm_get_data();
     if (shm->count >= MAX_ITEMS_IN_LIST) {
@@ -98,9 +115,10 @@ void handle_add_item(SSL *ssl, void *buffer) {
         int new_idx = shm->count++;
         shm->items[new_idx].id = max_id + 1;
         strncpy(shm->items[new_idx].name, req->name, MAX_NAME_LEN - 1);
+        shm->items[new_idx].name[MAX_NAME_LEN - 1] = '\0';
         shm->items[new_idx].price = req->price;
         shm->items[new_idx].quantity = req->quantity;
-        sprintf(msg, "Added Item ID %d: %s", max_id + 1, req->name);
+        snprintf(msg, sizeof(msg), "Added Item ID %d: %s", max_id + 1, req->name);
     }
     shm_unlock();
     send_basic_resp(ssl, OP_ADD_ITEM, status, msg, 0);
@@ -118,7 +136,7 @@ void handle_remove_item(SSL *ssl, void *buffer) {
             if (i != shm->count - 1) shm->items[i] = shm->items[shm->count - 1];
             shm->count--;
             status = 0;
-            sprintf(msg, "Item ID %d removed", req->item_id);
+            snprintf(msg, sizeof(msg), "Item ID %d removed", req->item_id);
             break;
         }
     }
