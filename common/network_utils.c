@@ -84,9 +84,10 @@ SSL_CTX* create_client_context(const char *ca_file) {
         // Enforce verification
         SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
     } else {
-        // DANGER: No verification (Self-signed certs might need this for testing)
-        // In production, always verify!
-        SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
+        // return error if no CA file provided for this project
+        fprintf(stderr, "CA file is required for client context\n");
+        SSL_CTX_free(ctx);
+        return NULL;
     }
 
     return ctx;
