@@ -3,10 +3,10 @@
 #include <sqlite3.h>
 #include "db_manager.h"
 
-static sqlite3 *db = NULL;
 
 int db_init(const char *db_file) {
     char *err_msg = 0;
+    sqlite3 *db = NULL;
     int rc = sqlite3_open(db_file, &db);
 
     if (rc != SQLITE_OK) {
@@ -37,10 +37,12 @@ int db_init(const char *db_file) {
         
     sqlite3_exec(db, insert_sql, 0, 0, 0);
 
+    sqlite3_close(db);
+
     return 0;
 }
 
-int db_validate_user(const char *username, const char *password_hash) {
+int db_validate_user(sqlite3 *db, const char *username, const char *password_hash) {
     if (!db) return 0; // DB not initialized
 
     sqlite3_stmt *stmt;

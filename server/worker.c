@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <sqlite3.h>
 #include "worker.h"
 #include "../common/protocol.h"
 #include "../common/network_utils.h"
@@ -11,6 +12,9 @@
 #include "shm_manager.h"
 
 #define TIMEOUT_SEC 25 // allow missing 1~2 heartbeats
+#define DB_FILE "server/data/shop.db"
+
+static sqlite3 *worker_db = NULL;
 
 // --- Helper Functions ---
 
@@ -50,7 +54,7 @@ int handle_login(SSL *ssl, void *buffer) {
     req->password_hash[64] = '\0';
     
     printf("[Worker] Login attempt: %s\n", req->username);
-    int role = db_validate_user(req->username, req->password_hash);
+    int role = db_validate_user(worker_db, req->username, req->password_hash);
     
     send_basic_resp(ssl, OP_LOGIN_RESP, (role > 0) ? 0 : -1, 
                     (role > 0) ? "Login Success" : "Invalid Credentials", (role == 2));
@@ -226,6 +230,12 @@ void handle_client(SSL *ssl) {
 }
 
 void worker_loop(int server_fd, SSL_CTX *ctx) {
+    int rc = sqlite3_open(DB_FILE, &worker_db);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "[Worker] Cannot open database: %s\n", sqlite3_errmsg(worker_db));
+        exit(EXIT_FAILURE);
+    }
+
     while (1) {
         struct sockaddr_in client_addr;
         socklen_t addr_len = sizeof(client_addr);
@@ -243,4 +253,6 @@ void worker_loop(int server_fd, SSL_CTX *ctx) {
         SSL_free(ssl);
         close(client_fd);
     }
+
+    sqlite3_close(worker_db);
 }
