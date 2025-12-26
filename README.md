@@ -1,18 +1,42 @@
-分工表：
-<img width="759" height="400" alt="image" src="https://github.com/user-attachments/assets/7d19a2ce-cb7d-4f95-bf83-ec358f6dab1d" />
+# Online Shopping Sysyem (final project)
+High-Concurrency Client-Server Network Service System.
 
+## Task Assignment
+![Task Assignment](https://github.com/user-attachments/assets/7d19a2ce-cb7d-4f95-bf83-ec358f6dab1d)
 
-專案架構：
-<img width="1436" height="561" alt="image" src="https://github.com/user-attachments/assets/ea9184e9-9e60-45f7-92e4-6ac19473faad" />
+## Overall Architecture
+![Overall Architecture](https://github.com/user-attachments/assets/ea9184e9-9e60-45f7-92e4-6ac19473faad)
 
-專案編譯:
+## Certificate Diagram
+![Certificate Diagram](./docs/certificate-diagram.png)
+
+## Master-Worker Pattern
+
+#### Master
+<img src="./docs/master-diagram.png" width="50%" alt="Master Diagram" />
+
+#### Worker
+<img src="./docs/worker-diagram.png" alt="Worker Diagram" />
+
+## Build & Run
+
+### Build
+Compile the project:
+```bash
 make
+```
 
-執行server:
+### Run Server
+```bash
 make run-server
+```
 
-執行client:
+### Run Client
+```bash
 make run-client
+```
 
-壓力測試：
+### Run Stress Test
+```bash
 make run-stress
+```
